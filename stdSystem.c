@@ -6,6 +6,10 @@
  *  删除学生
  *  添加学生成绩
  *
+ * 当前只在termux上进行编译和测试
+ * Ubuntu18.4的环境下也能完美运行，其它环境下并不能确保是否能运行
+ * 目前是所以一个单链表来存放学生信息，学生数量越多占用的内存越多，而且不能永久存放学生信息，程序结束学生信息就会被释放。
+ *
  * 作者：
  * QQ：2946859498
  * */
@@ -124,10 +128,14 @@ void addStudent(STUDENT **students)   // 增加一个学生
 // 通过传递的数字返回对应的性别
 char *reSex(int num)
 {
+	/*
 	if (num)
 		return "男";
 	else 
 		return "女";
+	*/
+
+	return num? "男" : "女";
 }
 
 /* 打印全部学生信息
@@ -354,11 +362,28 @@ void findStudent(STUDENT *student)
 		coent = coent->next;
 		i++;
 	}
+
+	if (!numOfFind)
+		printf("找不到该学生！\n");
+}
+
+// 释放内存
+void freeR(STUDENT *p)
+{
+	STUDENT *ne = NULL;
+
+	while(p != NULL)
+	{
+		ne = p;
+		p = p->next;
+		free(ne);
+	}
 }
 
 int main(void)
 {
 	int inp;
+	STUDENT *ne = NULL;
 	STUDENT *students = NULL;
 
 	fprintf(stdout, "~~~~~~学生管理系统~~~~~~\n");
@@ -395,5 +420,9 @@ int main(void)
 				break;
 		}
 	}
+
+	freeR(students);
+	freeR(pool);
+
 	return 0;
 }
