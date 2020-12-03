@@ -40,6 +40,7 @@ unsigned short conent;   // 用于记录内存池当前的大小
 unsigned int num_of_std; // 当前学生数量
 
 char *reSex(int);
+void freeR(STUDENT *);
 void addGredes(STUDENT **);
 void reset_sdt(STUDENT **);
 void addStudent(STUDENT **);
