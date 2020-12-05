@@ -2,8 +2,9 @@
 
 ### [stdSystem.c](https://github.com/conch2/filec/blob/main/stdSystem.c) ###
 - 学生管理系统   
-目前使用单链表进行存储数据，使用内存池的垃圾回收机制（内存池容量1024）
-  - 结构体：  
+目前使用单链表进行存储数据，使用内存池的垃圾回收机制（内存池容量1024）  
+  
+  **结构体：**  
   这里我用了`typedef`来起了个别名，实际使用时也是用的别名  
   定义成员的时候还利用了结构体的我也不记得是什么名称的位操作 (:) 来节省空间  
   
@@ -27,7 +28,7 @@
     	char name[48];
   } STUDENT;
   ```
-  - 函数：  
+  **函数：**  
     
   [reSex()](https://github.com/conch2/filec/blob/main/stdSystem.c#L130) 原型：
   `char *reSex(int num)`
