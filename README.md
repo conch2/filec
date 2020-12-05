@@ -6,20 +6,21 @@
   - 结构体：  
   这里我用了`typedef`来起了个别名，实际使用时也是用的别名  
   定义成员的时候还利用了结构体的我也不记得是什么名称的位操作 (:) 来节省空间  
+  
   ----------
   用于存放学生成绩
   ```
   typedef struct Report
   {
-    	int english : 9;
-    	int mathematics : 9;
+    	int english : 9;  // 只能存放9位二进制位的值
+    	int mathematics : 9;  // 同上
   } REPORT;
   ```
   学生基本信息
   ```
   typedef struct Student
   {
-	    unsigned int sex : 1;
+  	unsigned int sex : 1;
     	unsigned int age : 9;
     	REPORT report;
     	struct Student *next;
@@ -27,47 +28,57 @@
   } STUDENT;
   ```
   - 函数：  
-  [reSex()](https://github.com/conch2/filec/blob/main/stdSystem.c#L130)
-  ``` 
-  char *reSex(int);
-  ```
+    
+  [reSex()](https://github.com/conch2/filec/blob/main/stdSystem.c#L130) 原型：
+  `char *reSex(int num)`
+  
   通过传递的数字返回对应的性别:  
-  当传入的int为 0 时返回 "女"，其他值返回 "男"。 
+  当传入的int为 0 时返回 "女"，其他值返回 "男"。这里使用了三目运算：`return num? "男" : "女";`
   
   ----------
-  [freeR()](https://github.com/conch2/filec/blob/main/stdSystem.c#L372)
+  [freeR()](https://github.com/conch2/filec/blob/main/stdSystem.c#L372) 原型：
+  `void freeR(STUDENT *p)`
+  
+  释放内存，通过传进来的单链表进行释放。释放整个单链表。执行时是边遍历边释放，指针往下走然后删除前一个信息。  
   ```
-  void freeR(STUDENT *);
+  STUDENT *ne = NULL;
+  while(p != NULL)
+  {
+  	ne = p;
+  	p = p->next;
+  	free(ne);
+  }
   ```
+  该程序一般用于程序结束时释放堆内存里的空间。
+  
   ----------
-  [addGredes()](https://github.com/conch2/filec/blob/main/stdSystem.c#L315)
-  ```
-  void addGredes(STUDENT **);
-  ```
+  [addGredes()](https://github.com/conch2/filec/blob/main/stdSystem.c#L315) 原型：
+  `void addGredes(STUDENT **students)`
+  
   ----------
-  ```
-  void reset_sdt(STUDENT **);
-  ```
+  [reset_sdt()](https://github.com/conch2/filec/blob/main/stdSystem.c#L52) 原型：
+  `void reset_sdt(STUDENT **student)`
+  
   ----------
-  ```
-  void addStudent(STUDENT **);
-  ```
+  [addStudent()](https://github.com/conch2/filec/blob/main/stdSystem.c#L61) 原型：
+  `void addStudent(STUDENT **students)`
+  
   ----------
-  ```
-  void delStudent(STUDENT **);
-  ```
+  [delStudent()](https://github.com/conch2/filec/blob/main/stdSystem.c#L267) 原型：
+  `void delStudent(STUDENT **students)`
+  
   ----------
-  ```
-  void findStudent(STUDENT *);
-  ```
+  [findStudent()](https://github.com/conch2/filec/blob/main/stdSystem.c#L340) 原型：
+  `void findStudent(STUDENT *student)`
+  
   ----------
-  ```
-  void showStudents(STUDENT *);
-  ```
+  [showStudents()](https://github.com/conch2/filec/blob/main/stdSystem.c#L150) 原型：
+  `void showStudents(STUDENT *students)`
+  
   ----------
-  ```
-  short whetherOrNotPrint(STUDENT *, short *);
-  ```
+  [whetherOrNotPrint()](https://github.com/conch2/filec/blob/main/stdSystem.c#L221) 原型：
+  `short whetherOrNotPrint(STUDENT *students, short *num)`
+  
 
 ### [web_c/](https://github.com/conch2/filec/tree/main/web_c) ###
 - 网络编程案例
