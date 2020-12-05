@@ -1,6 +1,6 @@
-# filec
+# filec #
 
-### [stdSystem.c](https://github.com/conch2/filec/blob/main/stdSystem.c)
+### [stdSystem.c](https://github.com/conch2/filec/blob/main/stdSystem.c) ###
 - 学生管理系统   
 目前使用单链表进行存储数据，使用内存池的垃圾回收机制（内存池容量1024）
   - 结构体：  
@@ -25,6 +25,42 @@
     	struct Student *next;
     	char name[48];
   } STUDENT;
+  ```
+  - 函数：  
+  ```
+  char *reSex(int);
+  ```
+  ----------
+  ```
+  void freeR(STUDENT *);
+  ```
+  ----------
+  ```
+  void addGredes(STUDENT **);
+  ```
+  ----------
+  ```
+  void reset_sdt(STUDENT **);
+  ```
+  ----------
+  ```
+  void addStudent(STUDENT **);
+  ```
+  ----------
+  ```
+  void delStudent(STUDENT **);
+  ```
+  ----------
+  ```
+  void findStudent(STUDENT *);
+  ```
+  ----------
+  ```
+  void showStudents(STUDENT *);
+  ```
+  ----------
+  ```
+  short whetherOrNotPrint(STUDENT *, short *);
   ```
 
 ### [web_c/](https://github.com/conch2/filec/tree/main/web_c)
