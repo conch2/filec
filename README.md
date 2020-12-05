@@ -8,7 +8,6 @@
   这里我用了`typedef`来起了个别名，实际使用时也是用的别名  
   定义成员的时候还利用了结构体的我也不记得是什么名称的位操作 (:) 来节省空间  
   
-  ----------
   用于存放学生成绩
   ```
   typedef struct Report
@@ -56,29 +55,43 @@
   [addGredes()](https://github.com/conch2/filec/blob/main/stdSystem.c#L315) 原型：
   `void addGredes(STUDENT **students)`
   
+  待更新...
+  
   ----------
   [reset_sdt()](https://github.com/conch2/filec/blob/main/stdSystem.c#L52) 原型：
   `void reset_sdt(STUDENT **student)`
+
+  待更新...
   
   ----------
   [addStudent()](https://github.com/conch2/filec/blob/main/stdSystem.c#L61) 原型：
   `void addStudent(STUDENT **students)`
   
+  待更新...
+  
   ----------
   [delStudent()](https://github.com/conch2/filec/blob/main/stdSystem.c#L267) 原型：
   `void delStudent(STUDENT **students)`
+  
+  待更新...
   
   ----------
   [findStudent()](https://github.com/conch2/filec/blob/main/stdSystem.c#L340) 原型：
   `void findStudent(STUDENT *student)`
   
+  待更新...
+  
   ----------
   [showStudents()](https://github.com/conch2/filec/blob/main/stdSystem.c#L150) 原型：
   `void showStudents(STUDENT *students)`
   
+  待更新...
+  
   ----------
   [whetherOrNotPrint()](https://github.com/conch2/filec/blob/main/stdSystem.c#L221) 原型：
   `short whetherOrNotPrint(STUDENT *students, short *num)`
+  
+  待更新...
   
 
 ### [web_c/](https://github.com/conch2/filec/tree/main/web_c) ###
