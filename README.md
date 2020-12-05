@@ -32,8 +32,8 @@
   [reSex()](https://github.com/conch2/filec/blob/main/stdSystem.c#L130) 原型：
   `char *reSex(int num)`
   
-  通过传递的数字返回对应的性别:  
-  当传入的int为 0 时返回 "女"，其他值返回 "男"。这里使用了三目运算：`return num? "男" : "女";`
+  通过传递的数字返回对应的性别；这个函数非常简单，函数内只有一行代码直接使用了三目运算：`return num? "男" : "女";`实现了功能。定义这一个函数就是为了防止出现多个重复代码。  
+  当传入的int为 0 时返回 "女"，其他值返回 "男"。
   
   ----------
   [freeR()](https://github.com/conch2/filec/blob/main/stdSystem.c#L372) 原型：
