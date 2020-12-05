@@ -27,15 +27,20 @@
   } STUDENT;
   ```
   - 函数：  
-  ```
+  [reSex()](https://github.com/conch2/filec/blob/main/stdSystem.c#L130)
+  ``` 
   char *reSex(int);
   ```
-  通过传递的数字返回对应的性别  
+  通过传递的数字返回对应的性别:  
+  当传入的int为 0 时返回 "女"，其他值返回 "男"。 
+  
   ----------
+  [freeR()](https://github.com/conch2/filec/blob/main/stdSystem.c#L372)
   ```
   void freeR(STUDENT *);
   ```
   ----------
+  [addGredes()](https://github.com/conch2/filec/blob/main/stdSystem.c#L315)
   ```
   void addGredes(STUDENT **);
   ```
