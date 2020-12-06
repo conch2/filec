@@ -384,6 +384,8 @@ void freeR(STUDENT *p)
 // 写入文件
 void writeStd(STUDENT **students)
 {
+	int i;
+
 	if(*students==NULL)
 		return ;
 
@@ -400,8 +402,8 @@ void writeStd(STUDENT **students)
 	while(nowstd != NULL)
 	{
 		fprintf(fp, "%s``", nowstd->name);
-		fprintf(fp, "%d``", nowstd->sex);
-		fprintf(fp, "%d``", nowstd->age);
+		fprintf(fp, "%u``", nowstd->sex);
+		fprintf(fp, "%u``", nowstd->age);
 		fputc('\n', fp);
 		nowstd = nowstd->next;
 	}
