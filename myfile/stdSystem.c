@@ -369,14 +369,14 @@ void findStudent(STUDENT *student)
 }
 
 // 释放内存
-void freeR(STUDENT *p)
+void freeR(STUDENT **p)
 {
 	STUDENT *ne = NULL;
 
-	while(p != NULL)
+	while(*p != NULL)
 	{
-		ne = p;
-		p = p->next;
+		ne = *p;
+		*p = (*p)->next;
 		free(ne);
 	}
 }
@@ -412,7 +412,6 @@ void writeStd(STUDENT **students)
 
 void readStd(STUDENT **students)
 {
-	int i=0,j=0;
 	FILE *fp;
 	STUDENT *nowd;
 
@@ -440,9 +439,6 @@ void readStd(STUDENT **students)
 		}
 	}
 
-	fscanf(fp, "%s``%d``%d``", nowd->name, &i, &j);
-	nowd->sex = i, nowd->age = j;
-	nowd->next = *students;
 	*students = nowd;
 
 	fclose(fp);
@@ -491,9 +487,9 @@ int main(void)
 		}
 	}
 
-	freeR(students);
-	freeR(pool);
 	writeStd(&students);
+	freeR(&students);
+	freeR(&pool);
 
 	return 0;
 }
