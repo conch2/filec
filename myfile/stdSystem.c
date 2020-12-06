@@ -18,7 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX 1024  // 内存池的大小
+#define MAX 1024     // 内存池的大小
+#define NAME_SIZE 48 // 学生姓名的长度
 
 typedef struct Report
 {
@@ -29,25 +30,91 @@ typedef struct Report
 typedef struct Student
 {
 	unsigned int sex : 1;  // 只能存放0和1
-	unsigned int age : 9;
+	unsigned int age : 16;
 	REPORT report;
 	struct Student *next;
-	char name[48];
+	char name[NAME_SIZE];
 } STUDENT;
 
 STUDENT *pool;           // 内存池
 unsigned short conent;   // 用于记录内存池当前的大小
 unsigned int num_of_std; // 当前学生数量
 
+int tonum_2(int);
 char *reSex(int);
-void freeR(STUDENT *);
+void freeR(STUDENT **);
+void readStd(STUDENT **);
+void writeStd(STUDENT **);
 void addGredes(STUDENT **);
 void reset_sdt(STUDENT **);
 void addStudent(STUDENT **);
 void delStudent(STUDENT **);
 void findStudent(STUDENT *);
 void showStudents(STUDENT *);
+void tonum(char *, int *, int);
 short whetherOrNotPrint(STUDENT *, short *);
+
+void tonum(char *s, int *v, int len)
+{
+	int tonum_2(int i);
+	int j=0, i = 1, numi=0;
+
+	while (1)
+	{
+		if (len == 0)
+			break;
+		if ((int)*s!=10 && *s!='\0')
+		{
+			while (1)
+			{
+				if ((int)*s>47 && (int)*s<58)
+				{
+					//判断数字前面是否带负号
+					if ((int)*(s-1)==45)
+						i=-1; //改变符号
+					i*=10, j++;
+				} else
+				{
+					//判断前一个字符是否是数字
+					if (i != 1 && i != -1)
+					{
+						s -= j;  //回退指针
+						//多位数组合
+						for ( ; i != 1 && i != -1; i /= 10)
+						{
+							numi += tonum_2((int)*s)*(i/10);
+							s++;
+						}
+						*v = numi, v++;
+						numi = 0, j=0, i = 1;
+					}
+					break;
+				}
+				s++;
+			}
+		} else 
+			break;
+		s++, len--;
+	}
+}
+
+/*
+ * 根据ASCII表数字编码对应的数值返回对应数字
+ * */
+int tonum_2(int j)
+{
+	int i=48, num=0;
+	if (j > 47 && j < 58)
+	{
+		while (1)
+		{
+			if (j == i)
+				return num;
+			i++, num++;
+		}
+	} else 
+		return 0;
+}
 
 void reset_sdt(STUDENT **student)  // 重置一个学生
 {
@@ -401,9 +468,9 @@ void writeStd(STUDENT **students)
 
 	while(nowstd != NULL)
 	{
-		fprintf(fp, "%s``", nowstd->name);
-		fprintf(fp, "%u``", nowstd->sex);
-		fprintf(fp, "%u``", nowstd->age);
+		fprintf(fp, "`@name`%s`", nowstd->name);
+		fprintf(fp, "`@sex`%u`", nowstd->sex);
+		fprintf(fp, "`@age`%u`", nowstd->age);
 		fputc('\n', fp);
 		nowstd = nowstd->next;
 	}
@@ -412,6 +479,9 @@ void writeStd(STUDENT **students)
 
 void readStd(STUDENT **students)
 {
+	int i, creat_bool=0;
+	char c, str[NAME_SIZE];
+	char stra[NAME_SIZE];
 	FILE *fp;
 	STUDENT *nowd;
 
@@ -422,24 +492,70 @@ void readStd(STUDENT **students)
 		return ;
 	}
 
-	if(conent)
+	while(!feof(fp))
 	{
-		conent--;
-		nowd = pool;
-		reset_sdt(&nowd);
-		pool = pool->next;
-	}
-	else
-	{
-		nowd = (STUDENT *)malloc(sizeof(STUDENT));
-		if (nowd == NULL)
+		if((c=fgetc(fp)) == '`' && (c=fgetc(fp)) == '@')
 		{
-			printf("内存分配失败！\n");
-			exit(1);
-		}
-	}
+			if(conent && !creat_bool)
+			{
+				conent--;
+				nowd = pool;
+				reset_sdt(&nowd);
+				pool = pool->next;
+			}
+			else if(!creat_bool)
+			{
+				nowd = (STUDENT *)malloc(sizeof(STUDENT));
+				if (nowd == NULL)
+				{
+					printf("内存分配失败！\n");
+					exit(-1);
+				}
+			}
 
-	*students = nowd;
+			for(i=0; '`' != (c=fgetc(fp)); i++)
+			{
+				str[i] = c;
+			}
+			str[i] = '\0';
+			if(!strcmp(str, "name"))
+			{
+				for(i=0; (c=fgetc(fp)) != '`' && i+1 <= sizeof(str); i++)
+				{
+					(nowd->name)[i] = c;
+				}
+			}
+			else if(!strcmp(str, "sex"))
+			{
+				c = fgetc(fp);
+				if(c == 49)
+					nowd->sex = 1;
+				else 
+					nowd->sex = 0;
+			}
+			else if(!strcmp(str, "age"))
+			{
+				for(i=0; (c=fgetc(fp)) != '`' && i < 5; i++)
+				{
+					stra[i] = c;
+				}
+				stra[i] = '\0';
+
+				tonum(stra, &i, 5);
+				nowd->age = i;
+			}
+			if(strlen(nowd->name) && nowd->age != 0)
+			{
+				nowd->next = *students;
+				*students = nowd;
+				creat_bool = 0;
+			}
+			else 
+				creat_bool = 1;
+		}
+		else if(c == '`')
+			fseek(fp, -1, SEEK_CUR);
+	}
 
 	fclose(fp);
 }
