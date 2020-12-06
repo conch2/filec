@@ -18,27 +18,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX 1024     // 内存池的大小
-#define NAME_SIZE 48 // 学生姓名的长度
+#define MAX 1024            // 内存池的大小
+#define NAME_SIZE 48        // 学生姓名的长度
 
 typedef struct Report
 {
 	int english : 9;
-	int mathematics : 9;  // 最高存放（-255~255）的十进制数
+	int mathematics : 9;    // 最高存放（-255~255）的十进制数
 } REPORT;
 
 typedef struct Student
 {
-	unsigned int sex : 1;  // 只能存放0和1
+	unsigned int sex : 1;   // 只能存放0和1
 	unsigned int age : 16;
 	REPORT report;
 	struct Student *next;
+	unsigned int id;
 	char name[NAME_SIZE];
 } STUDENT;
 
-STUDENT *pool;           // 内存池
-unsigned short conent;   // 用于记录内存池当前的大小
-unsigned int num_of_std; // 当前学生数量
+STUDENT *pool;              // 内存池
+unsigned short conent;      // 用于记录内存池当前的大小
+unsigned int num_of_std;    // 当前学生数量
 
 int tonum_2(int);
 char *reSex(int);
@@ -118,6 +119,7 @@ int tonum_2(int j)
 
 void reset_sdt(STUDENT **student)  // 重置一个学生
 {
+	(*student)->id = 0;
 	(*student)->sex = 0;
 	(*student)->age = 0;
 	(*student)->next = NULL;
@@ -176,6 +178,7 @@ void addStudent(STUDENT **students)   // 增加一个学生
 	scanf("%u", &i), getchar();
 	now->age = i;
 	memset(&(now->report), -1, sizeof(REPORT));
+	now->id = num_of_std+1;
 	fprintf(stdout, "录入学生成功，开始写入内存...\n");
 
 	// 先判断students是否为空，防止踩空
@@ -249,7 +252,7 @@ void showStudents(STUDENT *students)
 	while (coent != NULL)
 	{
 		num++;
-		fprintf(stdout, "\n学生 %d\n", num);
+		fprintf(stdout, "\n学生 %d\n", coent->id);
 		fprintf(stdout, "姓名：%s\n", coent->name);
 		fprintf(stdout, "性别：%s\n", reSex(coent->sex));
 		fprintf(stdout, "年龄：%u\n", coent->age);
@@ -406,7 +409,6 @@ void addGredes(STUDENT **students)
  * */
 void findStudent(STUDENT *student)
 {
-	int i = 1; // 当前所在链表的位置
 	char str[48];
 	STUDENT *coent;
 	coent = student;
@@ -422,13 +424,12 @@ void findStudent(STUDENT *student)
 		{
 			numOfFind++;
 			// 找到后输出
-			fprintf(stdout, "已找到学生：%d\n", i);
+			fprintf(stdout, "已找到学生：%d\n", coent->id);
 			fprintf(stdout, "姓名：%s\n", coent->name);
 			fprintf(stdout, "性别：%s\n", reSex(coent->sex));
 			fprintf(stdout, "年龄：%d\n", coent->age);
 		}
 		coent = coent->next;
-		i++;
 	}
 
 	if (!numOfFind)
@@ -457,7 +458,7 @@ void writeStd(STUDENT **students)
 		return ;
 
 	FILE *fp;
-	fp = fopen(".students", "a+");
+	fp = fopen(".students", "w");
 	if(fp==NULL)
 	{
 		printf("fail to open the file!\n文件操作失败！无法打开文件！\n");
@@ -468,7 +469,7 @@ void writeStd(STUDENT **students)
 
 	while(nowstd != NULL)
 	{
-		fprintf(fp, "`@name`%s`", nowstd->name);
+		fprintf(fp, "`@id`%d``@name`%s`", nowstd->id, nowstd->name);
 		fprintf(fp, "`@sex`%u`", nowstd->sex);
 		fprintf(fp, "`@age`%u`", nowstd->age);
 		fputc('\n', fp);
@@ -518,7 +519,18 @@ void readStd(STUDENT **students)
 				str[i] = c;
 			}
 			str[i] = '\0';
-			if(!strcmp(str, "name"))
+			if(!strcmp(str, "id"))
+			{
+				for(i=0; (c=fgetc(fp)) != '`' && i < 12; i++)
+				{
+					stra[i] = c;
+				}
+				stra[i] = '\0';
+
+				tonum(stra, &i, 12);
+				nowd->id = i;
+			}
+			else if(!strcmp(str, "name"))
 			{
 				for(i=0; (c=fgetc(fp)) != '`' && i+1 <= sizeof(str); i++)
 				{
@@ -549,6 +561,7 @@ void readStd(STUDENT **students)
 				nowd->next = *students;
 				*students = nowd;
 				creat_bool = 0;
+				num_of_std++;
 			}
 			else 
 				creat_bool = 1;
