@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define SJ_NUM 5            // 学科数量
 #define SDP_MAX 1024        // 学生内存池的大小
 #define SJP_MAX 1024        // 成绩内存池的大小
 #define NAME_SIZE 48        // 学生姓名的长度
@@ -42,7 +43,7 @@ typedef struct Student
 	char name[NAME_SIZE];
 } STUDENT;
 
-char *SubjectName[] = 
+char *SubjectName[SJ_NUM] = 
 {
 	"语文",
 	"数学",
@@ -54,7 +55,7 @@ char *SubjectName[] =
 STUDENT *last;              // 学生链表的最后一个学生位置
 SUBJECT *SjPool;            // 成绩内存池
 STUDENT *StdPool;           // 学生内存池
-unsigned int MaxId;         // 当前学生的最大ID
+unsigned int MaxId=0;       // 当前学生的最大ID
 unsigned short conent;      // 用于记录内存池当前的大小
 unsigned int num_of_std;    // 当前学生数量
 
@@ -134,11 +135,23 @@ int tonum_2(int j)
 
 void reset_sdt(STUDENT **student)  // 重置一个学生
 {
+	SUBJECT *n = (*student)->subject;
+
 	(*student)->id = 0;
 	(*student)->sex = 0;
 	(*student)->age = 0;
 	(*student)->next = NULL;
-	(*student)->subject = NULL;
+	if(n != NULL)
+	{
+		SUBJECT *o = NULL;
+		for(; n->next != NULL; n = n->next)
+		{
+			free(o);
+			o = n;
+		}
+		free(o);
+		free(n);
+	}
 	memset((*student)->name, 0, sizeof((*student)->name));
 }
 
@@ -193,7 +206,7 @@ void addStudent(STUDENT **students)   // 增加一个学生
 	scanf("%u", &i), getchar();
 	now->age = i;
 	now->subject = NULL;
-	now->id = num_of_std+1;
+	now->id = (MaxId += 1);
 	fprintf(stdout, "录入学生成功，开始写入内存...\n");
 
 	// 先判断students是否为空，防止踩空
@@ -326,13 +339,12 @@ short whetherOrNotPrint(STUDENT *students, unsigned int *num)
 	{
 		printf("请输入学生号码：");
 		scanf("%d", &lnum);
-		while(getchar()!='\n');
-	} while(lnum == 0 || (lnum > num_of_std && lnum*(-1) > num_of_std));
+	} while(lnum == 0 || (lnum > MaxId && lnum*(-1) > MaxId));
 
 	// 支持倒序删除
 	if (lnum < 0)
 	{
-		*num = num_of_std + lnum + 1;
+		*num = MaxId + lnum + 1;
 	}
 	else 
 		*num = lnum;
@@ -362,11 +374,16 @@ void delStudent(STUDENT **students)
 	}
 
 	// 定位要删除的学生在链表的位置
-	while (num != 1)
+	while (num != cen->id && cen != NULL)
 	{
-		num--;
 		old = cen;
 		cen = cen->next;
+	}
+
+	if(cen == NULL)
+	{
+		printf("未找到该学生请确认输入值是否正确。\n");
+		return ;
 	}
 
 	// 防止students的头指针被删除
@@ -396,42 +413,81 @@ void delStudent(STUDENT **students)
  * */
 void addGredes(STUDENT **students)
 {
-	short fi = 0;
+	short i, fi = 0;
 	unsigned int num;  // 学生在链表的位置
 	STUDENT *coent;
 	SUBJECT *ach;
 	coent = *students;
 
-	whetherOrNotPrint(*students, &num);
+	if (!whetherOrNotPrint(*students, &num))
+		return ;
 
-	while (num != 1)
+	while (coent != NULL && num != coent->id)
 	{
-		num--;
 		coent = coent->next;
+	}
+	if(coent == NULL)
+	{
+		printf("未找到该学生请确认输入值是否正确。\n");
+		return ;
 	}
 
 	printf("目前开设的课程有:\n");
-	for(int i=0; i < 5;i++)
+	for(i=0; i < SJ_NUM;i++)
 	{
 		printf("%d: %s\n", i+1, SubjectName[i]);
 	}
 
 	printf("输入序号：");
 	scanf("%hd", &fi);
-	while(fi > 0)
+	fi -= 1;
+	while(fi >= 0)
 	{
-		if(fi<5)
+		if(fi < SJ_NUM)
 		{
-			printf("是否要添加该学生的%s成绩？(Y/N)", SubjectName[fi]);
-			scanf("%c", fi);
-			switch(fi)
+			ach = coent->subject;
+			i = 0;
+			while(ach != NULL)
 			{
-				case 'n':
-				case 'N':
+				if(!strcmp(SubjectName[fi], ach->name))
+				{
+					printf("该学生的%s成绩是：", SubjectName[fi]);
+					scanf("%hd", &fi);
+					ach->achievement = fi;
+					printf("成功录入成绩！\n");
+				}
+				if(ach->next == NULL)
 					break;
+				ach = ach->next;
+				i++;
+			}
+			if(coent->subject == NULL)
+			{
+				ach = (SUBJECT *)malloc(sizeof(SUBJECT));
+				strcpy(ach->name, SubjectName[fi]);
+				printf("成绩：");
+				scanf("%hd", &fi);
+				ach->achievement = fi;
+				ach->next = NULL;
+				coent->subject = ach;
+				printf("成功录入成绩！\n");
+			}
+			else if(ach->next == NULL)
+			{
+				SUBJECT *now;
+				now = (SUBJECT *)malloc(sizeof(SUBJECT));
+				strcpy(now->name, SubjectName[fi]);
+				printf("成绩：");
+				scanf("%hd", &fi);
+				now->achievement = fi;
+				now->next = NULL;
+				ach->next = now;
+				printf("成功录入成绩！\n");
 			}
 		}
+		printf("请输入序号，输入小于等于0的数退出");
 		scanf("%hd", &fi);
+		fi -= 1;
 	}
 }
 
@@ -439,7 +495,7 @@ void addGredes(STUDENT **students)
  * */
 void findStudent(STUDENT *student)
 {
-	char str[48];
+	char str[NAME_SIZE];
 	STUDENT *coent;
 	coent = student;
 	int numOfFind = 0; // 找到学生的数量
@@ -589,7 +645,7 @@ void readStd(STUDENT **students)
 				nowd->age = i;
 			}
 
-			if(strlen(nowd->name) && nowd->age)
+			if(strlen(nowd->name) && nowd->age && nowd->id > MaxId)
 			{
 				if(*students == NULL)
 				{
@@ -604,6 +660,7 @@ void readStd(STUDENT **students)
 				last = nowd;
 				creat_bool = 0;
 				num_of_std++;
+				MaxId = nowd->id;
 			}
 			else 
 				creat_bool = 1;
@@ -617,7 +674,7 @@ void readStd(STUDENT **students)
 
 int main(void)
 {
-	char inp;
+	short inp;
 	STUDENT *students = NULL;
 	last = students;
 
@@ -631,27 +688,26 @@ int main(void)
 
 	readStd(&students);
 
-	while (inp != '-')
+	while (inp > 0)
 	{
 		printf("请输入序号：");
-		scanf("%c", &inp);
-		while(getchar()!='\n');
+		scanf("%hd", &inp), getchar();
 
 		switch (inp)
 		{
-			case '1':
+			case 1:
 				addStudent(&students);
 				break;
-			case '2':
+			case 2:
 				showStudents(students);
 				break;
-			case '3':
+			case 3:
 				delStudent(&students);
 				break;
-			case '4':
+			case 4:
 				addGredes(&students);
 				break;
-			case '5':
+			case 5:
 				findStudent(students);
 				break;
 			default:
