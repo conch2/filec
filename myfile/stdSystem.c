@@ -54,6 +54,7 @@ char *SubjectName[] =
 STUDENT *last;              // 学生链表的最后一个学生位置
 SUBJECT *SjPool;            // 成绩内存池
 STUDENT *StdPool;           // 学生内存池
+unsigned int MaxId;         // 当前学生的最大ID
 unsigned short conent;      // 用于记录内存池当前的大小
 unsigned int num_of_std;    // 当前学生数量
 
@@ -325,6 +326,7 @@ short whetherOrNotPrint(STUDENT *students, unsigned int *num)
 	{
 		printf("请输入学生号码：");
 		scanf("%d", &lnum);
+		while(getchar()!='\n');
 	} while(lnum == 0 || (lnum > num_of_std && lnum*(-1) > num_of_std));
 
 	// 支持倒序删除
@@ -332,8 +334,9 @@ short whetherOrNotPrint(STUDENT *students, unsigned int *num)
 	{
 		*num = num_of_std + lnum + 1;
 	}
+	else 
+		*num = lnum;
 
-	printf("whetherOrNotPrint\n");
 	return 1;
 }
 
@@ -361,7 +364,6 @@ void delStudent(STUDENT **students)
 	// 定位要删除的学生在链表的位置
 	while (num != 1)
 	{
-		printf("next\n");
 		num--;
 		old = cen;
 		cen = cen->next;
@@ -394,6 +396,7 @@ void delStudent(STUDENT **students)
  * */
 void addGredes(STUDENT **students)
 {
+	short fi = 0;
 	unsigned int num;  // 学生在链表的位置
 	STUDENT *coent;
 	SUBJECT *ach;
@@ -407,9 +410,29 @@ void addGredes(STUDENT **students)
 		coent = coent->next;
 	}
 
-	ach = coent->subject;
-	for(; ach != NULL; ach = ach->next)
-	printf("录入成功！\n");
+	printf("目前开设的课程有:\n");
+	for(int i=0; i < 5;i++)
+	{
+		printf("%d: %s\n", i+1, SubjectName[i]);
+	}
+
+	printf("输入序号：");
+	scanf("%hd", &fi);
+	while(fi > 0)
+	{
+		if(fi<5)
+		{
+			printf("是否要添加该学生的%s成绩？(Y/N)", SubjectName[fi]);
+			scanf("%c", fi);
+			switch(fi)
+			{
+				case 'n':
+				case 'N':
+					break;
+			}
+		}
+		scanf("%hd", &fi);
+	}
 }
 
 /* 按照条件查找学生
