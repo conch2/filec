@@ -18,31 +18,46 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX 1024            // 内存池的大小
+#define SDP_MAX 1024        // 学生内存池的大小
+#define SJP_MAX 1024        // 成绩内存池的大小
 #define NAME_SIZE 48        // 学生姓名的长度
+#define RESEX(num) (num? "男" : "女")
 
-typedef struct Report
+/* 学科也是用个单链表来存储成绩，例如：语文
+ * */
+typedef struct Subject
 {
-	int english : 9;
-	int mathematics : 9;    // 最高存放（-255~255）的十进制数
-} REPORT;
+	short achievement;
+	struct Subject *next;
+	char name[NAME_SIZE];   // 学科名称
+} SUBJECT;
 
 typedef struct Student
 {
 	unsigned int sex : 1;   // 只能存放0和1
 	unsigned int age : 16;
-	REPORT report;
+	SUBJECT *subject;
 	struct Student *next;
 	unsigned int id;
 	char name[NAME_SIZE];
 } STUDENT;
 
-STUDENT *pool;              // 内存池
+char *SubjectName[] = 
+{
+	"语文",
+	"数学",
+	"英语",
+	"物理",
+	"化学"
+};
+
+STUDENT *last;              // 学生链表的最后一个学生位置
+SUBJECT *SjPool;            // 成绩内存池
+STUDENT *StdPool;           // 学生内存池
 unsigned short conent;      // 用于记录内存池当前的大小
 unsigned int num_of_std;    // 当前学生数量
 
 int tonum_2(int);
-char *reSex(int);
 void freeR(STUDENT **);
 void readStd(STUDENT **);
 void writeStd(STUDENT **);
@@ -53,11 +68,10 @@ void delStudent(STUDENT **);
 void findStudent(STUDENT *);
 void showStudents(STUDENT *);
 void tonum(char *, int *, int);
-short whetherOrNotPrint(STUDENT *, short *);
+short whetherOrNotPrint(STUDENT *, unsigned int *);
 
 void tonum(char *s, int *v, int len)
 {
-	int tonum_2(int i);
 	int j=0, i = 1, numi=0;
 
 	while (1)
@@ -123,7 +137,7 @@ void reset_sdt(STUDENT **student)  // 重置一个学生
 	(*student)->sex = 0;
 	(*student)->age = 0;
 	(*student)->next = NULL;
-	memset(&((*student)->report), -1, sizeof(REPORT));
+	(*student)->subject = NULL;
 	memset((*student)->name, 0, sizeof((*student)->name));
 }
 
@@ -137,9 +151,9 @@ void addStudent(STUDENT **students)   // 增加一个学生
 	if (conent)
 	{
 		conent--;
-		now = pool;
+		now = StdPool;
 		reset_sdt(&now);
-		pool = pool->next;
+		StdPool = StdPool->next;
 	} else  // 内存池不为空，申请一个新的内存空间
 	{
 		now = (STUDENT *)malloc(sizeof(STUDENT));
@@ -177,36 +191,25 @@ void addStudent(STUDENT **students)   // 增加一个学生
 	printf("请输入年龄：");
 	scanf("%u", &i), getchar();
 	now->age = i;
-	memset(&(now->report), -1, sizeof(REPORT));
+	now->subject = NULL;
 	now->id = num_of_std+1;
 	fprintf(stdout, "录入学生成功，开始写入内存...\n");
 
 	// 先判断students是否为空，防止踩空
 	if (*students != NULL)
 	{
-		now->next = *students;
-		*students = now;
+		last->next = now;
+		now->next = NULL;
+		last = now;
 	} else
 	{
 		*students = now;
 		now->next = NULL;
+		last = now;
 	}
 
 	num_of_std++;  // 当前学生数量自加1
 	fprintf(stdout, "成功添加一名学生！\n\n");
-}
-
-// 通过传递的数字返回对应的性别
-char *reSex(int num)
-{
-	/*
-	if (num)
-		return "男";
-	else 
-		return "女";
-	*/
-
-	return num? "男" : "女";
 }
 
 /* 打印全部学生信息
@@ -222,9 +225,8 @@ void showStudents(STUDENT *students)
 	char s;
 	int num = 0, i;
 	STUDENT *coent;
+	SUBJECT *net;
 	coent = students;
-	int student_report[2];
-	char *cou[] = {"数学", "英语"}; // 记得对应学科数量
 
 	if (students == NULL)
 	{
@@ -254,26 +256,31 @@ void showStudents(STUDENT *students)
 		num++;
 		fprintf(stdout, "\n学生 %d\n", coent->id);
 		fprintf(stdout, "姓名：%s\n", coent->name);
-		fprintf(stdout, "性别：%s\n", reSex(coent->sex));
+		fprintf(stdout, "性别：%s\n", RESEX(coent->sex));
 		fprintf(stdout, "年龄：%u\n", coent->age);
 		// 如果用户需要打印成绩就打印
 		if (i)
 		{
-			// 向学生成绩列表中添加学生成绩
-			student_report[1] = coent->report.english;
-			student_report[0] = coent->report.mathematics; 
-
-			// 如果学生已经录入成绩就打印成绩，如未录入就打印成绩
-			// for 的条件记得对应学生的学科数
-			for (int i=0; i < 2; i++)
+			if(coent->subject == NULL)
+				printf("该学生未录入成绩！\n");
+			else
 			{
-				if (coent->report.mathematics < 0)
-					printf("还未录入%s的成绩，快去录入吧！\n", cou[i]);
-				else 
-					printf("%s：%d\n", cou[i], student_report[i]);
+				net = coent->subject;
+				for(; net != NULL;net = net->next)
+				{
+					printf("%s: ", net->name);
+					if(net->achievement < 0)
+						printf("无成绩！\n");
+					else 
+						printf("%d\n", net->achievement);
+				}
 			}
 		}
 
+		if(coent->next == NULL)
+		{
+			last = coent;
+		}
 		coent = coent->next;
 	}
 
@@ -288,9 +295,10 @@ void showStudents(STUDENT *students)
  * Return:
  *  是否有学生，有返回1，没找有到返回0
  * */
-short whetherOrNotPrint(STUDENT *students, short *num)
+short whetherOrNotPrint(STUDENT *students, unsigned int *num)
 {
 	char ca;
+	int lnum;
 
 	if (students == NULL)
 	{
@@ -316,15 +324,16 @@ short whetherOrNotPrint(STUDENT *students, short *num)
 	do
 	{
 		printf("请输入学生号码：");
-		scanf("%hd", num);
-	} while(*num == 0 || (*num > num_of_std && *num*(-1) > num_of_std));
+		scanf("%d", &lnum);
+	} while(lnum == 0 || (lnum > num_of_std && lnum*(-1) > num_of_std));
 
 	// 支持倒序删除
-	if (*num == -1)
+	if (lnum < 0)
 	{
-		*num = num_of_std + *num + 1;
+		*num = num_of_std + lnum + 1;
 	}
 
+	printf("whetherOrNotPrint\n");
 	return 1;
 }
 
@@ -336,7 +345,7 @@ short whetherOrNotPrint(STUDENT *students, short *num)
  * */
 void delStudent(STUDENT **students)
 {
-	short num;  // 学生的链表位置
+	unsigned int num;  // 学生的链表位置
 	STUDENT *cen;
 	STUDENT *old;
 	old = (cen = *students);
@@ -352,6 +361,7 @@ void delStudent(STUDENT **students)
 	// 定位要删除的学生在链表的位置
 	while (num != 1)
 	{
+		printf("next\n");
 		num--;
 		old = cen;
 		cen = cen->next;
@@ -366,10 +376,10 @@ void delStudent(STUDENT **students)
 		*students = (*students)->next;
 	}
 	// 内存池没满就丢到内存池中，满了就删除
-	if (conent < MAX)
+	if (conent < SDP_MAX)
 	{
-		cen->next = pool;
-		pool = cen;
+		cen->next = StdPool;
+		StdPool = cen;
 		conent++;
 	} else 
 	{
@@ -384,8 +394,9 @@ void delStudent(STUDENT **students)
  * */
 void addGredes(STUDENT **students)
 {
-	short num;  // 学生在链表的位置
+	unsigned int num;  // 学生在链表的位置
 	STUDENT *coent;
+	SUBJECT *ach;
 	coent = *students;
 
 	whetherOrNotPrint(*students, &num);
@@ -396,12 +407,8 @@ void addGredes(STUDENT **students)
 		coent = coent->next;
 	}
 
-	printf("请输入数学成绩：");
-	scanf("%hd", &num);
-	coent->report.mathematics = num;
-	printf("请输入英语成绩：");
-	scanf("%hd", &num);
-	coent->report.english = num;
+	ach = coent->subject;
+	for(; ach != NULL; ach = ach->next)
 	printf("录入成功！\n");
 }
 
@@ -426,7 +433,7 @@ void findStudent(STUDENT *student)
 			// 找到后输出
 			fprintf(stdout, "已找到学生：%d\n", coent->id);
 			fprintf(stdout, "姓名：%s\n", coent->name);
-			fprintf(stdout, "性别：%s\n", reSex(coent->sex));
+			fprintf(stdout, "性别：%s\n", RESEX(coent->sex));
 			fprintf(stdout, "年龄：%d\n", coent->age);
 		}
 		coent = coent->next;
@@ -478,6 +485,8 @@ void writeStd(STUDENT **students)
 	fclose(fp);
 }
 
+/* 从文件中读取学生数据写入链表
+ * */
 void readStd(STUDENT **students)
 {
 	int i, creat_bool=0;
@@ -500,9 +509,9 @@ void readStd(STUDENT **students)
 			if(conent && !creat_bool)
 			{
 				conent--;
-				nowd = pool;
+				nowd = StdPool;
 				reset_sdt(&nowd);
-				pool = pool->next;
+				StdPool = StdPool->next;
 			}
 			else if(!creat_bool)
 			{
@@ -556,10 +565,20 @@ void readStd(STUDENT **students)
 				tonum(stra, &i, 5);
 				nowd->age = i;
 			}
-			if(strlen(nowd->name) && nowd->age != 0)
+
+			if(strlen(nowd->name) && nowd->age)
 			{
-				nowd->next = *students;
-				*students = nowd;
+				if(*students == NULL)
+				{
+					*students = nowd;
+					nowd->next = NULL;
+				}
+				else
+				{
+					last->next = nowd;
+					nowd->next = NULL;
+				}
+				last = nowd;
 				creat_bool = 0;
 				num_of_std++;
 			}
@@ -575,9 +594,9 @@ void readStd(STUDENT **students)
 
 int main(void)
 {
-	int inp;
-	STUDENT *ne = NULL;
+	char inp;
 	STUDENT *students = NULL;
+	last = students;
 
 	fprintf(stdout, "~~~~~~学生管理系统~~~~~~\n");
 	fprintf(stdout, "\t1、添加一个学生\n");
@@ -589,26 +608,27 @@ int main(void)
 
 	readStd(&students);
 
-	while (inp != -1)
+	while (inp != '-')
 	{
 		printf("请输入序号：");
-		scanf("%d", &inp), getchar();
+		scanf("%c", &inp);
+		while(getchar()!='\n');
 
 		switch (inp)
 		{
-			case 1:
+			case '1':
 				addStudent(&students);
 				break;
-			case 2:
+			case '2':
 				showStudents(students);
 				break;
-			case 3:
+			case '3':
 				delStudent(&students);
 				break;
-			case 4:
+			case '4':
 				addGredes(&students);
 				break;
-			case 5:
+			case '5':
 				findStudent(students);
 				break;
 			default:
@@ -618,7 +638,7 @@ int main(void)
 
 	writeStd(&students);
 	freeR(&students);
-	freeR(&pool);
+	freeR(&StdPool);
 
 	return 0;
 }
