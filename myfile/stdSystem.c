@@ -56,8 +56,9 @@ STUDENT *last;              // 学生链表的最后一个学生位置
 SUBJECT *SjPool;            // 成绩内存池
 STUDENT *StdPool;           // 学生内存池
 unsigned int MaxId=0;       // 当前学生的最大ID
-unsigned short conent;      // 用于记录内存池当前的大小
-unsigned int num_of_std;    // 当前学生数量
+unsigned short conent=0;    // 用于记录内存池当前的大小
+unsigned short SjConent=0;  // 用于记录成绩内存池当前的大小
+unsigned int num_of_std=0;  // 当前学生数量
 
 int tonum_2(int);
 void freeR(STUDENT **);
@@ -70,6 +71,7 @@ void delStudent(STUDENT **);
 void findStudent(STUDENT *);
 void showStudents(STUDENT *);
 void tonum(char *, int *, int);
+void readSubj(FILE **, STUDENT **);
 short whetherOrNotPrint(STUDENT *, unsigned int *);
 
 void tonum(char *s, int *v, int len)
@@ -146,11 +148,29 @@ void reset_sdt(STUDENT **student)  // 重置一个学生
 		SUBJECT *o = NULL;
 		for(; n->next != NULL; n = n->next)
 		{
-			free(o);
+			if(o != NULL && SjConent < SJP_MAX)
+			{
+				o->next = SjPool;
+				SjPool = o;
+				SjConent++;
+			} else if(o != NULL)
+				free(o);
 			o = n;
 		}
-		free(o);
-		free(n);
+		if(o != NULL && SjConent < SJP_MAX)
+		{
+			o->next = SjPool;
+			SjPool = o;
+			SjConent++;
+		} else if(o != NULL)
+			free(o);
+		if(n != NULL && SjConent < SJP_MAX)
+		{
+			n->next = SjPool;
+			SjPool = n;
+			SjConent++;
+		} else if(n != NULL)
+			free(n);
 	}
 	memset((*student)->name, 0, sizeof((*student)->name));
 }
@@ -455,6 +475,7 @@ void addGredes(STUDENT **students)
 					scanf("%hd", &fi);
 					ach->achievement = fi;
 					printf("成功录入成绩！\n");
+					fi = -1;
 				}
 				if(ach->next == NULL)
 					break;
@@ -463,7 +484,21 @@ void addGredes(STUDENT **students)
 			}
 			if(coent->subject == NULL)
 			{
-				ach = (SUBJECT *)malloc(sizeof(SUBJECT));
+				if(SjConent)
+				{
+					ach = SjPool;
+					SjPool = SjPool->next;
+					SjConent--;
+				}
+				else
+				{
+					ach = (SUBJECT *)malloc(sizeof(SUBJECT));
+					if(ach == NULL)
+					{
+						printf("内存分配失败！\n");
+						exit(1);
+					}
+				}
 				strcpy(ach->name, SubjectName[fi]);
 				printf("成绩：");
 				scanf("%hd", &fi);
@@ -472,7 +507,7 @@ void addGredes(STUDENT **students)
 				coent->subject = ach;
 				printf("成功录入成绩！\n");
 			}
-			else if(ach->next == NULL)
+			else if(ach->next == NULL && fi != -1)
 			{
 				SUBJECT *now;
 				now = (SUBJECT *)malloc(sizeof(SUBJECT));
@@ -539,6 +574,7 @@ void freeR(STUDENT **p)
 void writeStd(STUDENT **students)
 {
 	int i;
+	SUBJECT *subj;
 
 	if(*students==NULL)
 		return ;
@@ -555,13 +591,66 @@ void writeStd(STUDENT **students)
 
 	while(nowstd != NULL)
 	{
-		fprintf(fp, "`@id`%d``@name`%s`", nowstd->id, nowstd->name);
-		fprintf(fp, "`@sex`%u`", nowstd->sex);
-		fprintf(fp, "`@age`%u`", nowstd->age);
-		fputc('\n', fp);
+		subj = nowstd->subject;
+		fprintf(fp, "`@ID`%d``@NAME`%s`", nowstd->id, nowstd->name);
+		fprintf(fp, "`@SEX`%u``@AGE`%u`", nowstd->sex, nowstd->age);
+		fprintf(fp, "`@SUBJECT`");
+		for(subj=nowstd->subject; subj != NULL; subj = subj->next)
+		{
+			fprintf(fp, "$%s$%hd$", subj->name, subj->achievement);
+		}
+		fprintf(fp, "`\n");
 		nowstd = nowstd->next;
 	}
 	fclose(fp);
+}
+
+void readSubj(FILE **fp, STUDENT **std)
+{
+	int i = 0;
+	char c = 0;
+	char str[NAME_SIZE];
+
+	while(c != '\n')
+	{
+		if((c=fgetc(*fp)) == '`' && (c=fgetc(*fp)) == '@')
+		{
+			for(i=0; i < NAME_SIZE; i++)
+			{
+				str[i] = (c=fgetc(*fp));
+				if(c == '`')
+				{
+					str[i] = '\0';
+					break;
+				}
+			}
+			if(!strcmp(str, "SUBJECT"))
+			{
+				if((c=fgetc(*fp)) == '$')
+				{
+					for(i=0; i < NAME_SIZE; i++)
+					{
+						str[i] = (c=fgetc(*fp));
+						if(c == '$')
+						{
+							str[i] = '\0';
+							break;
+						}
+					}
+					for(int j=0; j<SJ_NUM; j++)
+					{
+						if(!strcmp(str, SubjectName[j]))
+						{
+						}
+					}
+				}
+			}
+			else if(i < NAME_SIZE)
+				fseek(*fp, i*(-1), SEEK_CUR);
+		}
+		else if(c == '`')
+			fseek(*fp, -1, SEEK_CUR);
+	}
 }
 
 /* 从文件中读取学生数据写入链表
@@ -598,7 +687,7 @@ void readStd(STUDENT **students)
 				if (nowd == NULL)
 				{
 					printf("内存分配失败！\n");
-					exit(-1);
+					return ;
 				}
 			}
 
@@ -607,7 +696,7 @@ void readStd(STUDENT **students)
 				str[i] = c;
 			}
 			str[i] = '\0';
-			if(!strcmp(str, "id"))
+			if(!strcmp(str, "ID"))
 			{
 				for(i=0; (c=fgetc(fp)) != '`' && i < 12; i++)
 				{
@@ -618,14 +707,14 @@ void readStd(STUDENT **students)
 				tonum(stra, &i, 12);
 				nowd->id = i;
 			}
-			else if(!strcmp(str, "name"))
+			else if(!strcmp(str, "NAME"))
 			{
 				for(i=0; (c=fgetc(fp)) != '`' && i+1 <= sizeof(str); i++)
 				{
 					(nowd->name)[i] = c;
 				}
 			}
-			else if(!strcmp(str, "sex"))
+			else if(!strcmp(str, "SEX"))
 			{
 				c = fgetc(fp);
 				if(c == 49)
@@ -633,7 +722,7 @@ void readStd(STUDENT **students)
 				else 
 					nowd->sex = 0;
 			}
-			else if(!strcmp(str, "age"))
+			else if(!strcmp(str, "AGE"))
 			{
 				for(i=0; (c=fgetc(fp)) != '`' && i < 5; i++)
 				{
@@ -645,7 +734,7 @@ void readStd(STUDENT **students)
 				nowd->age = i;
 			}
 
-			if(strlen(nowd->name) && nowd->age && nowd->id > MaxId)
+			if(strlen(nowd->name) && nowd->age)
 			{
 				if(*students == NULL)
 				{
@@ -660,7 +749,9 @@ void readStd(STUDENT **students)
 				last = nowd;
 				creat_bool = 0;
 				num_of_std++;
-				MaxId = nowd->id;
+				readSubj(&fp, &nowd);
+				if(MaxId < nowd->id)
+					MaxId = nowd->id;
 			}
 			else 
 				creat_bool = 1;
@@ -721,3 +812,4 @@ int main(void)
 
 	return 0;
 }
+
