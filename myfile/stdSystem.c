@@ -72,6 +72,7 @@ void findStudent(STUDENT *);
 void showStudents(STUDENT *);
 void tonum(char *, int *, int);
 void readSubj(FILE **, STUDENT **);
+void reAddGredes(STUDENT **, short *, short);
 short whetherOrNotPrint(STUDENT *, unsigned int *);
 
 void tonum(char *s, int *v, int len)
@@ -430,6 +431,62 @@ void delStudent(STUDENT **students)
 }
 
 /* 添加（一个）学生成绩
+ *
+ * coent: 要添加成绩的学生
+ * fi: 要添加学科在学科列表（SubjectName）的位置
+ * achieve: 成绩
+ * */
+void reAddGredes(STUDENT **coent, short *fi, short achieve)
+{
+	short num = *fi;
+	SUBJECT *ach;
+	ach = (*coent)->subject;
+
+	while(ach != NULL)
+	{
+		if(!strcmp(SubjectName[num], ach->name))
+		{
+			ach->achievement = achieve;
+			num = -1;
+		}
+		if(ach->next == NULL)
+			break;
+		ach = ach->next;
+	}
+	if((*coent)->subject == NULL)
+	{
+		if(SjConent)
+		{
+			ach = SjPool;
+			SjPool = SjPool->next;
+			SjConent--;
+		}
+		else
+		{
+			ach = (SUBJECT *)malloc(sizeof(SUBJECT));
+			if(ach == NULL)
+			{
+				printf("内存分配失败！\n");
+				return ;
+			}
+		}
+		strcpy(ach->name, SubjectName[num]);
+		ach->achievement = achieve;
+		ach->next = NULL;
+		(*coent)->subject = ach;
+	}
+	else if(ach->next == NULL && num != -1)
+	{
+		SUBJECT *now;
+		now = (SUBJECT *)malloc(sizeof(SUBJECT));
+		strcpy(now->name, SubjectName[num]);
+		now->achievement = achieve;
+		now->next = NULL;
+		ach->next = now;
+	}
+}
+
+/* 添加（一个）学生成绩
  * */
 void addGredes(STUDENT **students)
 {
@@ -465,60 +522,10 @@ void addGredes(STUDENT **students)
 	{
 		if(fi < SJ_NUM)
 		{
-			ach = coent->subject;
-			i = 0;
-			while(ach != NULL)
-			{
-				if(!strcmp(SubjectName[fi], ach->name))
-				{
-					printf("该学生的%s成绩是：", SubjectName[fi]);
-					scanf("%hd", &fi);
-					ach->achievement = fi;
-					printf("成功录入成绩！\n");
-					fi = -1;
-				}
-				if(ach->next == NULL)
-					break;
-				ach = ach->next;
-				i++;
-			}
-			if(coent->subject == NULL)
-			{
-				if(SjConent)
-				{
-					ach = SjPool;
-					SjPool = SjPool->next;
-					SjConent--;
-				}
-				else
-				{
-					ach = (SUBJECT *)malloc(sizeof(SUBJECT));
-					if(ach == NULL)
-					{
-						printf("内存分配失败！\n");
-						exit(1);
-					}
-				}
-				strcpy(ach->name, SubjectName[fi]);
-				printf("成绩：");
-				scanf("%hd", &fi);
-				ach->achievement = fi;
-				ach->next = NULL;
-				coent->subject = ach;
-				printf("成功录入成绩！\n");
-			}
-			else if(ach->next == NULL && fi != -1)
-			{
-				SUBJECT *now;
-				now = (SUBJECT *)malloc(sizeof(SUBJECT));
-				strcpy(now->name, SubjectName[fi]);
-				printf("成绩：");
-				scanf("%hd", &fi);
-				now->achievement = fi;
-				now->next = NULL;
-				ach->next = now;
-				printf("成功录入成绩！\n");
-			}
+			printf("请输入%s的成绩：", SubjectName[fi]);
+			scanf("%hd", &i);
+			reAddGredes(&coent, &fi, i);
+			printf("成功录入成绩！\n");
 		}
 		printf("请输入序号，输入小于等于0的数退出");
 		scanf("%hd", &fi);
@@ -624,9 +631,9 @@ void readSubj(FILE **fp, STUDENT **std)
 					break;
 				}
 			}
-			if(!strcmp(str, "SUBJECT"))
+			if(!strcmp(str, "SUBJECT") && (c=fgetc(*fp)) == '$')
 			{
-				if((c=fgetc(*fp)) == '$')
+				for(int j=0; j < SJ_NUM && c != '\n'; j++)
 				{
 					for(i=0; i < NAME_SIZE; i++)
 					{
@@ -636,13 +643,28 @@ void readSubj(FILE **fp, STUDENT **std)
 							str[i] = '\0';
 							break;
 						}
+						if(c=='\n')
+							return ;
 					}
-					for(int j=0; j<SJ_NUM; j++)
+					for(short j=0; j<SJ_NUM; j++)
 					{
 						if(!strcmp(str, SubjectName[j]))
 						{
+							i = 0;
+							while((c=fgetc(*fp)) != '$' && c!='\n')
+							{
+								str[i] = c;
+								i++;
+							}
+							str[i] = '\0';
+							tonum(str, &i, NAME_SIZE);
+							reAddGredes(std, &j, i);
 						}
+						if(c=='\n')
+							return ;
 					}
+					if(c=='\n')
+						return ;
 				}
 			}
 			else if(i < NAME_SIZE)
@@ -765,7 +787,7 @@ void readStd(STUDENT **students)
 
 int main(void)
 {
-	short inp;
+	short inp = SDP_MAX;
 	STUDENT *students = NULL;
 	last = students;
 

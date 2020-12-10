@@ -8,6 +8,6 @@
 `@ID`8``@NAME`胡萝卜女``@SEX`0``@AGE`45``@SUBJECT``
 `@ID`9``@NAME`欧普``@SEX`1``@AGE`78``@SUBJECT``
 `@ID`10``@NAME`快说``@SEX`0``@AGE`65``@SUBJECT``
-`@ID`11``@NAME`曲靖``@SEX`0``@AGE`34``@SUBJECT``
+`@ID`11``@NAME`曲靖``@SEX`0``@AGE`34``@SUBJECT`$英语$28$$数学$67$`
 `@ID`12``@NAME`张三``@SEX`1``@AGE`29``@SUBJECT``
 `@ID`13``@NAME`李四``@SEX`1``@AGE`56``@SUBJECT``
