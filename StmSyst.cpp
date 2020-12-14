@@ -57,13 +57,15 @@ bool print()
 
 	data.seekg(std::ios::beg);
 
-	std::cout << '\n' << "NAME     ID     SEX" << '\n';
+	std::cout << '\n'
+		<< "NAME     ID     SEX" << '\n';
 
 	while( (ch = data.get()) != EOF )
 	{
 		std::cout << ch;
 	}
 
+	std::cout << '\n';
 	data.close();
 
 	return true;
@@ -71,7 +73,7 @@ bool print()
 
 bool addData()
 {
-	int i=1;
+	bool i = true;
 	std::string chv;
 	std::fstream data( FILE_NAME, std::ios::app );
 	if( !data )
@@ -88,10 +90,18 @@ bool addData()
 		if( chv.size() < 3 )
 		{
 			std::cout << "名字太短了！" << '\n';
+			std::cin >> chv;
+			i = true;
 		} 
 		else if( chv.size() > 12)
 		{
 			std::cout << "名字太长了！" << '\n';
+			std::cin >> chv;
+			i = true;
+		}
+		else 
+		{
+			i = false;
 		}
 	}
 
@@ -121,20 +131,20 @@ bool addData()
 	{
 		switch( c )
 		{
-			case 'F':
-			case 'f':
-				c = 'F';
-				i = 0;
-				break;
-			case 'M':
-			case 'm':
-				c = 'M';
-				i = 0;
-				break;
-			default:
-				std::cout << "请规范输入（F/N）：";
-				std::cin >> c;
-				break;
+		case 'F':
+		case 'f':
+			c = 'F';
+			i = 0;
+			break;
+		case 'M':
+		case 'm':
+			c = 'M';
+			i = 0;
+			break;
+		default:
+			std::cout << "请规范输入（F/N）：";
+			std::cin >> c;
+			break;
 		}
 	}
 
