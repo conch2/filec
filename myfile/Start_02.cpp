@@ -10,6 +10,7 @@
 #include <fstream>
 #include <unistd.h>
 #include <iostream>
+#include <sys/time.h>
 
 class Base
 {
@@ -88,7 +89,16 @@ Base::Base( std::string file_name, unsigned long s_time )
 	std::cout << "Start " << this->file_name << this->fileSuffix << std::endl;;
 }
 
-Base::~Base(){}
+Base::~Base()
+{
+	if( !access( (file_name+fileSuffix).c_str(), F_OK ) )
+	{
+		if( system( ("rm "+file_name+fileSuffix+backupSuffix).c_str() ) )
+		{
+			std::cout << "备份文件无法删除！" << std::endl;
+		}
+	}
+}
 
 bool Base::run( void )
 {
@@ -174,10 +184,10 @@ bool Base::run( void )
  * */
 bool Base::child_thread( void )
 {
-	int id;
-	char ch;
 	std::string bj_type;
 	std::string runfile;
+	unsigned long long time;
+	struct timeval start_tv, acc_tv;
 
 	if( this->file_type == "C++" )
 		bj_type = "g++ ";
@@ -186,20 +196,35 @@ bool Base::child_thread( void )
 
 	this->apprun = ONE;
 
+	gettimeofday( &start_tv, NULL );
 	if( system( (bj_type+this->file_name+fileSuffix
 					+" -o "+this->file_name).c_str() ) )
 	{
+		gettimeofday( &acc_tv, NULL );
+		time = acc_tv.tv_sec * 1000 + acc_tv.tv_usec / 1000;
+		time -= start_tv.tv_sec * 1000 + start_tv.tv_usec / 1000;
 		this->apprun = -1;
-		std::cout << "\n编译错误，请检查源代码！" << std::endl;
+		std::cout << "\n编译错误，请检查源代码！" << "总用时：" <<
+			time << "ms" << std::endl;
 		return false;
 	}
 
-	std::cout << "\n编译完成，开始运行...\n" << std::endl;
+	gettimeofday( &acc_tv, NULL );
+	time = acc_tv.tv_sec * 1000 + acc_tv.tv_usec / 1000;
+	time -= start_tv.tv_sec * 1000 + start_tv.tv_usec / 1000;
+	std::cout << "\n编译完成，开始运行...  编译总用时：" << time << 
+		"ms\n" << std::endl;
 
 	runfile = "./" + file_name;
 
 	this->apprun = TWO;
+	gettimeofday( &start_tv, NULL );
 	system( runfile.c_str() );
+	gettimeofday( &acc_tv, NULL );
+	time = acc_tv.tv_sec * 1000 + acc_tv.tv_usec / 1000;
+	time -= start_tv.tv_sec * 1000 + start_tv.tv_usec / 1000;
+	std::cout << "\n程序运行总用时：" << time << 
+		"ms" << std::endl;
 	this->apprun = THREE;
 
 	return true;
