@@ -2,7 +2,6 @@
 /* 该文件是定义函数，声明在myhd.h */
 /*******************************************************/
 
-#include <ctime>
 #include "myhd.h"
 #include <cctype>
 #include <iomanip>
@@ -63,6 +62,8 @@ void ThreadPool::renovate(void)
 
 bool UrlFunction::run(SOCKET client, std::string& url, std::string& request)
 {
+	if ((url.find_last_of("/") + 1 == url.length()))
+		url.erase(url.find_last_of("/"));
 	if (this->url != url)
 		return false;
 
@@ -118,9 +119,6 @@ void accept_request(const SOCKET client, ThreadPool* tp, const int tpid)
 		return;
 	}
 
-	if ((url.find_last_of("/") + 1 == url.length()))
-		url.erase(url.find_last_of("/"));
-
 	for (i = 0; i < urlpatterns.size(); i++)
 	{
 		if (urlpatterns[i].run(client, url, method))
@@ -129,9 +127,9 @@ void accept_request(const SOCKET client, ThreadPool* tp, const int tpid)
 
 	if (i == urlpatterns.size())
 	{
-		if (!getHandle(client, url))
+		if (!urlMateFile(client, url))
 		{
-			//clear_client(client, false);
+			clear_client(client, false);
 			not_found(client);
 		}
 	}
@@ -146,6 +144,7 @@ void accept_request(const SOCKET client, ThreadPool* tp, const int tpid)
 /* 输出当前时间 */
 void print_time(void)
 {
+	/*
 	time_t now = time(0);
 	struct tm* curr_time = localtime(&now);
 
@@ -155,6 +154,15 @@ void print_time(void)
 		RIGTH_FILL_ZERO << curr_time->tm_hour << ':' <<
 		RIGTH_FILL_ZERO << curr_time->tm_min << ':' <<
 		RIGTH_FILL_ZERO << curr_time->tm_sec;
+		*/
+	SYSTEMTIME sys;
+	GetLocalTime(&sys);
+	std::cout << sys.wYear << '-' <<
+		RIGTH_FILL_ZERO << sys.wMonth << '-' <<
+		RIGTH_FILL_ZERO << sys.wDay << ' ' <<
+		RIGTH_FILL_ZERO << sys.wHour << ':' <<
+		RIGTH_FILL_ZERO << sys.wMinute << ':' <<
+		RIGTH_FILL_ZERO << sys.wSecond;
 }
 
 /* 获取一行数据 */
