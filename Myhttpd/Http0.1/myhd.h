@@ -6,9 +6,10 @@
 #include <vector>
 #include <thread>
 #include <string>
+#include <stdio.h>
+#include <sstream>
 #include <iostream>
 #include <winsock2.h>
-#include <initializer_list>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -258,12 +259,11 @@ bool sendFile(SOCKET client, std::string filePath);
 /* 获取当前工作目录 */
 std::string getPath(void);
 long long getFileSize(std::string filePath);
+bool findFolderFiles(std::string path, std::vector<std::string>& files);
+bool urlMateFile(SOCKET client, std::string url);
+bool handleFileHread(SOCKET client, std::string path);
 
 void home(SOCKET client, std::string request, ...);
-void index(SOCKET client, std::string request, ...);
-void image(SOCKET client, std::string request, ...);
-void image2(SOCKET client, std::string request, ...);
-void image3(SOCKET client, std::string request, ...);
 void ico(SOCKET client, std::string request, ...);
 
 #endif
