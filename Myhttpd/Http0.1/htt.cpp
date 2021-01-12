@@ -49,6 +49,7 @@ void run(void)
 		{
 			printf("accept error !%x\n", WSAGetLastError());
 		}
+		//std::cout << inet_ntoa(client_addr.sin_addr) << " ";
 		if (tp.push(client_sock))
 		{
 			printf("push error!\n");
@@ -93,7 +94,7 @@ SOCKET startup(void)
 		system("pause");
 		exit(1);
 	}
-	if (listen(server, 10) < 0)
+	if (listen(server, THREADPOOL_SIZE) < 0)
 	{
 		printf("listen error! %x\n", WSAGetLastError());
 		system("pause");
