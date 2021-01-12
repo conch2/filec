@@ -191,7 +191,7 @@ bool sendFile(SOCKET client, std::string filePath)
 /* 获取当前工作路径 */
 std::string getPath(void)
 {
-	if (!access(thisFilePath.c_str(), 0x0))
+	if (!_access(thisFilePath.c_str(), 0x0))
 		return thisFilePath;
 	std::cout << "getPath: access error!" << std::endl;
 
@@ -212,7 +212,7 @@ std::string getPath(void)
 	}
 	//FilePath.append("\\Debug");
 
-	//std::cout << thisFilePath << std::endl;
+	std::cout << FilePath << std::endl;
 	/*  //用这个会报莫名其妙的错误
 	LPTSTR szPath;
 	memset(&szPath, 0, sizeof(szPath));
@@ -247,4 +247,156 @@ long long getFileSize(std::string filePath)
 	ina.close();
 
 	return sendLen;
+}
+
+bool findFolderFiles(std::string path, std::vector<std::string>& files)
+{
+	//文件句柄
+	long hFile = 0;
+	struct _finddata_t fileinfo;
+	std::string p;
+
+	if ((hFile = _findfirst(p.assign(path).append("\\*").c_str(), &fileinfo)) != -1)
+	{
+		do
+		{
+			//判断文件是文件夹
+			if ((fileinfo.attrib & _A_SUBDIR))
+			{
+				if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0)
+				{
+					findFolderFiles(p.assign(path).append("\\").append(fileinfo.name), files);
+				}
+			}
+			else
+			{
+				files.push_back(p.assign(path).append("\\").append(fileinfo.name));
+			}
+		} while (_findnext(hFile, &fileinfo) == 0);
+		_findclose(hFile);
+		return true;
+	}
+	return false;
+
+}
+
+bool urlMateFile(SOCKET client, std::string url)
+{
+	//当前目录下的所有文件夹
+	std::vector<std::string> folder;
+	std::string filePath = thisFilePath;
+	if (_access(thisFilePath.c_str(), 0x0))
+		filePath = getPath();
+	if ((url.find_last_of("/") + 1 == url.length()))
+		url.erase(url.find_last_of("/"));
+	int g;
+	if ((g = url.substr(url.find_last_of("/"), url.length()).find('.')) == -1 || url.substr(url.find_last_of("/"), url.length()).find(".html") != -1)
+	{
+		if (g == -1)
+			url.append(".html");
+		std::string path = filePath + "\\templates" + url;
+		pathToWa(path, '/', FILE_PATH_CHAR);
+		if (!_access(path.c_str(), 0x0))
+		{
+			hreaders(client);
+			sendFile(client, path);
+			return true;
+		}
+		std::cout << "urlMateFile: " << "无法找到 " << path << std::endl;
+	} {  //删除vector的元素和其所占的内存空间
+		std::vector<std::string> tmp = folder;
+		folder.swap(tmp);
+	}
+	folder = std::vector<std::string>();
+	{ //获取当前目录下的所有文件夹，将文件名保存到folder
+		long hFile = 0;  //文件句柄
+		std::string p;
+		struct _finddata_t fileinfo;
+		if ((hFile = _findfirst(p.assign(filePath).append("\\*").c_str(), &fileinfo)) != -1)
+		{
+			do
+			{
+				//判断文件是文件夹
+				if ((fileinfo.attrib & _A_SUBDIR))
+				{
+					if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0)
+						folder.push_back(p.assign("\\").append(fileinfo.name));
+				}
+			} while (_findnext(hFile, &fileinfo) == 0);
+			_findclose(hFile);
+		}
+	}
+	std::vector<std::string> absFiles;
+	int j = 0, filePathLen = filePath.length();
+	for (int i = 0; i < folder.size(); i++)
+	{
+		if (findFolderFiles(filePath + folder[i], absFiles))
+		{
+			for (; j < absFiles.size(); j++)
+			{
+				absFiles[j].erase(0, filePathLen);
+				pathToWa(absFiles[j], FILE_PATH_CHAR, '/');
+				//std::cout << absFiles[j] << "\n";
+				if (absFiles[j] == url)
+				{
+					//std::cout << absFiles[j] << "\n";
+					std::string path = filePath + absFiles[j];
+					pathToWa(path, '/', FILE_PATH_CHAR);
+					//std::cout << path << "\n";
+					if (handleFileHread(client, path))
+					{
+						sendFile(client, path);
+						return true;
+					}
+					std::cout << "urlMateFile: " << "handleFileHread error! " << std::endl;
+					return false;
+				}
+			}
+		}
+		else
+			std::cout << "无法找到" << filePath + folder[i] << "下的文件" << std::endl;
+	}
+
+	return false;
+}
+
+bool handleFileHread(SOCKET client, std::string path)
+{
+	pathToWa(path, '/', FILE_PATH_CHAR);
+	if (_access(thisFilePath.c_str(), 0x0))
+	{
+		std::cout << "handleFileHread: " << "_access error! " << std::endl;
+		return false;
+	}
+	int i = path.find_last_of('\\');
+	int j;
+	if ((j = path.find_last_of('.')) != -1)
+	{
+		std::string suffix = path.substr(j, path.length());
+		//std::cout << suffix << "\n";
+		if (!sendString(client, "handleFileHread", "HTTP/1.1 200 OK\r\n"))
+			return false;
+		if (suffix == ".html" || (suffix == ".js" || (suffix == ".txt" || suffix == ".md")))
+		{
+			if (!sendString(client, "handleFileHread", SERVER_STRING))
+				return false;
+			if (!sendString(client, "handleFileHread", "Content-Type: " + suffix.substr(1, suffix.length()) + "\r\n\r\n"))
+				return false;
+		}
+		else
+		{
+			//std::cout << suffix.substr(1, suffix.length()) << "\n";
+			std::stringstream ss;
+			if (!sendString(client, "handleFileHread", SERVER_STRING))
+				return false;
+			if (!sendString(client, "handleFileHread", "Accept-Ranges: bytes\r\n"))
+				return false;
+			ss << getFileSize(path) << "\r\n";
+			if (!sendString(client, "handleFileHread", "Content-Length: " + ss.str()))
+				return false;
+			if (!sendString(client, "handleFileHread", "Content-Type: " + suffix.substr(1, suffix.length()) + "\r\n\r\n"))
+				return false;
+		}
+	}
+	return true;
 }
