@@ -1,13 +1,25 @@
-#define WIN32_LEAN_AND_MEAN //避免Socket版本冲突
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-
 #include <vector>
 #include <stdio.h>
 #include <stdlib.h>
-#include <Windows.h>
-#include <WinSock2.h>
+#ifdef _WIN32
+	#define WIN32_LEAN_AND_MEAN //避免Socket版本冲突
+	#define _WINSOCK_DEPRECATED_NO_WARNINGS
 
-#pragma comment(lib, "ws2_32.lib")
+	#include <Windows.h>
+	#include <WinSock2.h>
+
+	#pragma comment(lib, "ws2_32.lib")
+#else 
+	#include <unistd.h>
+	#include <string.h>
+	#include <arpa/inet.h>
+	#include <sys/socket.h>
+	#include <sys/select.h>
+
+	#define SOCKET int
+	#define INVALID_SOCKET (SOCKET)(~0)
+	#define SOCKET_ERROR           (-1)
+#endif
 
 enum CMD
 {
@@ -117,16 +129,21 @@ int headleClient(SOCKET _client)
 		send(_client, (const char*)&clientHeader, sizeof(DataHeader), 0);
 	} break;
 	}
+	return 0;
 }
 
 int main()
 {
-	WSADATA dat;
-	//启动Windows网络环境
-	if (WSAStartup(MAKEWORD(2, 2), &dat) != 0)
+#ifdef _WIN32
 	{
-		printf("启动Windows网络环境失败\n");
+		WSADATA dat;
+		//启动Windows网络环境
+		if (WSAStartup(MAKEWORD(2, 2), &dat) != 0)
+		{
+			printf("启动Windows网络环境失败\n");
+		}
 	}
+#endif
 
 	SOCKET _sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (INVALID_SOCKET == _sock)
@@ -139,7 +156,12 @@ int main()
 	struct sockaddr_in _sockAddr = {};
 	_sockAddr.sin_family = AF_INET;
 	_sockAddr.sin_port = htons(8888);
+#ifdef _WIN32
 	_sockAddr.sin_addr.S_un.S_addr = INADDR_ANY;
+#else
+	_sockAddr.sin_addr.s_addr = INADDR_ANY;
+#endif
+
 	if (SOCKET_ERROR == bind(_sock, (sockaddr*)&_sockAddr, sizeof(struct sockaddr_in)))
 	{
 		printf("绑定socket失败...\n");
@@ -169,9 +191,16 @@ int main()
 		FD_SET(_sock, &fdWrite);
 		FD_SET(_sock, &fdExcpt);
 
-		for (size_t n = g_clients.size(); n > 0; n--)
+		SOCKET maxSock = _sock;
+
+		for (size_t n = g_clients.size(); n > 0; )
 		{
-			FD_SET(g_clients[n-1], &fdRead);
+			n--;
+			FD_SET(g_clients[n], &fdRead);
+			if (maxSock < g_clients[n])
+			{
+				maxSock = g_clients[n];
+			}
 		}
 		timeval t = { 0, 0 };
 		int ret = select(_sock+1, &fdRead, &fdWrite, &fdExcpt, &t);
@@ -184,7 +213,11 @@ int main()
 		{
 			FD_CLR(_sock, &fdRead);
 			struct sockaddr_in _clientAddr = {};
+#ifdef _WIN32
 			int claddrLen = sizeof(sockaddr_in);
+#else
+			socklen_t claddrLen = sizeof(sockaddr_in);
+#endif
 			SOCKET _client = accept(_sock, (struct sockaddr*)&_clientAddr, &claddrLen);
 			if (INVALID_SOCKET == _client)
 			{
@@ -202,6 +235,7 @@ int main()
 				printf("新客户端接入：SOCKET = %d  IP = %s\n", _client, inet_ntoa(_clientAddr.sin_addr));
 			}
 		}
+#ifdef _WIN32
 		for (size_t n = 0; n < fdRead.fd_count; n++)
 		{
 			if (-1 == headleClient(fdRead.fd_array[n]))
@@ -213,14 +247,39 @@ int main()
 				}
 			}
 		}
+#else 
+		for (size_t n = g_clients.size(); n > 0; )
+		{
+			n--;
+			if (FD_ISSET(g_clients[n], &fdRead))
+			{
+				if (-1 == headleClient(g_clients[n]))
+				{
+					std::vector<SOCKET>::iterator iter = g_clients.begin() + n;
+					if (iter != g_clients.end())
+					{
+						g_clients.erase(iter);
+					}
+				}
+			}
+		}
+#endif
 		//printf("处理其他事...\n");
 	}
 	for (int n = g_clients.size() - 1; n >= 0; n--)
 	{
+#ifdef _WIN32
 		closesocket(g_clients[n]);
+#else
+		close(g_clients[n]);
+#endif
 	}
+#ifdef _WIN32
 	closesocket(_sock);
 	WSACleanup();
 	system("pause");
+#else
+	close(_sock);
+#endif
 	return 0;
 }
