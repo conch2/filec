@@ -1,23 +1,22 @@
-
 #include <thread>
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef _WIN32
-	#include <Windows.h>
-	#include <WinSock2.h>
-	#define WIN32_LEAN_AND_MEAN //避免Socket版本冲突
+#define WIN32_LEAN_AND_MEAN //避免Socket版本冲突
+#include <Windows.h>
+#include <WinSock2.h>
 
-	#pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "ws2_32.lib")
 #else 
-	#include <unistd.h>
-	#include <string.h>
-	#include <arpa/inet.h>
-	#include <sys/socket.h>
-	#include <sys/select.h>
+#include <unistd.h>
+#include <string.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <sys/select.h>
 
-	#define SOCKET int
-	#define INVALID_SOCKET (SOCKET)(~0)
-	#define SOCKET_ERROR           (-1)
+#define SOCKET int
+#define INVALID_SOCKET (SOCKET)(~0)
+#define SOCKET_ERROR           (-1)
 #endif
 
 enum CMD
