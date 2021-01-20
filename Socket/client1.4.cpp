@@ -1,12 +1,24 @@
-#define WIN32_LEAN_AND_MEAN //避免Socket版本冲突
 
 #include <thread>
 #include <stdio.h>
 #include <stdlib.h>
-#include <Windows.h>
-#include <WinSock2.h>
+#ifdef _WIN32
+	#include <Windows.h>
+	#include <WinSock2.h>
+	#define WIN32_LEAN_AND_MEAN //避免Socket版本冲突
 
-#pragma comment(lib, "ws2_32.lib")
+	#pragma comment(lib, "ws2_32.lib")
+#else 
+	#include <unistd.h>
+	#include <string.h>
+	#include <arpa/inet.h>
+	#include <sys/socket.h>
+	#include <sys/select.h>
+
+	#define SOCKET int
+	#define INVALID_SOCKET (SOCKET)(~0)
+	#define SOCKET_ERROR           (-1)
+#endif
 
 enum CMD
 {
@@ -110,6 +122,7 @@ int headleClient(SOCKET _sock)
 		printf("收到服务端：CMD_NEW_USER_JOIN, 数据长度：%d ，sock = %d \n", user->dataLength, user->sock);
 	} break;
 	}
+	return 0;
 }
 
 bool thRun = true;
@@ -148,12 +161,14 @@ void cmdThread(SOCKET sock)
 
 int main()
 {
+#ifdef _WIN32
 	WSADATA dat;
 	//启动Windows网络环境
 	if (WSAStartup(MAKEWORD(2, 2), &dat) != 0)
 	{
 		printf("启动Windows网络环境失败\n");
 	}
+#endif
 
 	SOCKET _sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (INVALID_SOCKET == _sock)
@@ -166,7 +181,11 @@ int main()
 	struct sockaddr_in _sin = {};
 	_sin.sin_family = AF_INET;
 	_sin.sin_port = htons(8888);
-	_sin.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+#ifdef _WIN32
+	_sin.sin_addr.S_un.S_addr = inet_addr("192.168.56.1");
+#else
+	_sin.sin_addr.s_addr = inet_addr("192.168.56.1");
+#endif
 	if (SOCKET_ERROR == connect(_sock, (struct sockaddr*)&_sin, sizeof(struct sockaddr_in)))
 	{
 		printf("连接服务端失败...\n");
@@ -183,7 +202,7 @@ int main()
 		FD_ZERO(&fdRead);
 		FD_SET(_sock, &fdRead);
 		timeval t = { 0, 0 };
-		int ret = select(_sock, &fdRead, NULL, NULL, &t);
+		int ret = select(_sock + 1, &fdRead, NULL, NULL, &t);
 		if (ret < 0)
 		{
 			printf("服务端已断开连接...\n");
@@ -201,8 +220,12 @@ int main()
 		//printf("处理其他事...\n");
 	}
 	th.join();
+#ifdef _WIN32
 	closesocket(_sock);
 	WSACleanup();
 	system("pause");
+#else 
+	close(_sock);
+#endif 
 	return 0;
 }
