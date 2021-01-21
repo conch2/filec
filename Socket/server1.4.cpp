@@ -101,7 +101,7 @@ int headleClient(SOCKET _client)
 	DataHeader* clientHeader = (DataHeader*)recvBuf;
 	if (nlen <= 0)
 	{
-		printf("客户端已退出...\n");
+		printf("客户端<client %d>已退出...\n", _client);
 		return -1;
 	}
 	switch (clientHeader->cmd)
@@ -110,7 +110,7 @@ int headleClient(SOCKET _client)
 	{
 		recv(_client, recvBuf + sizeof(DataHeader), sizeof(Login), 0);
 		Login* login = (Login*)recvBuf;
-		printf("收到%d指令：CMD_LOGIN, 数据长度：%d,用户名：%s,密码：%s \n", _client, login->dataLength, login->userName, login->Password);
+		printf("收到<SOCKET=%d>指令：CMD_LOGIN, 数据长度：%d,用户名：%s,密码：%s \n", _client, login->dataLength, login->userName, login->Password);
 		LoginResult result;
 		send(_client, (const char*)&result, result.dataLength, 0);
 	} break;
@@ -118,7 +118,7 @@ int headleClient(SOCKET _client)
 	{
 		recv(_client, recvBuf + sizeof(DataHeader), sizeof(Logout), 0);
 		Logout* logout = (Logout*)recvBuf;
-		printf("收到%d指令：CMD_LOGOUT, 数据长度：%d,用户名：%s\n", _client, logout->dataLength, logout->userName);
+		printf("收到<SOCKET=%d>指令：CMD_LOGOUT, 数据长度：%d,用户名：%s\n", _client, logout->dataLength, logout->userName);
 		LogoutResult result;
 		send(_client, (const char*)&result, result.dataLength, 0);
 	} break;
@@ -140,7 +140,7 @@ int main()
 		//启动Windows网络环境
 		if (WSAStartup(MAKEWORD(2, 2), &dat) != 0)
 		{
-			printf("启动Windows网络环境失败\n");
+			printf("ERROR  启动Windows网络环境失败\n");
 		}
 	}
 #endif
@@ -148,7 +148,7 @@ int main()
 	SOCKET _sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (INVALID_SOCKET == _sock)
 	{
-		printf("创建socket失败...\n");
+		printf("ERROR  创建socket失败...\n");
 	}
 	else {
 		printf("创建socket成功...\n");
@@ -164,14 +164,14 @@ int main()
 
 	if (SOCKET_ERROR == bind(_sock, (sockaddr*)&_sockAddr, sizeof(struct sockaddr_in)))
 	{
-		printf("绑定socket失败...\n");
+		printf("ERROR  绑定socket失败...\n");
 	}
 	else {
 		printf("绑定socket成功...\n");
 	}
 	if (SOCKET_ERROR == listen(_sock, 5))
 	{
-		printf("监听socket失败...\n");
+		printf("ERROR  监听socket失败...\n");
 	}
 	else {
 		printf("监听socket成功...\n");
@@ -203,7 +203,7 @@ int main()
 			}
 		}
 		timeval t = { 0, 0 };
-		int ret = select(_sock+1, &fdRead, &fdWrite, &fdExcpt, &t);
+		int ret = select(maxSock + 1, &fdRead, &fdWrite, &fdExcpt, &t);
 		if (ret < 0)
 		{
 			printf("select结束...\n");
