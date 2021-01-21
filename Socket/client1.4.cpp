@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #ifdef _WIN32
 	#define WIN32_LEAN_AND_MEAN //避免Socket版本冲突
+	#define _WINSOCK_DEPRECATED_NO_WARNINGS
+
 	#include <Windows.h>
 	#include <WinSock2.h>
 
@@ -93,7 +95,7 @@ int headleClient(SOCKET _sock)
 {
 	//缓冲区
 	char recvBuf[1024] = {};
-	int nlen = recv(_sock, recvBuf, sizeof(DataHeader), 0);
+	long nlen = recv(_sock, recvBuf, sizeof(DataHeader), 0);
 	DataHeader* clientHeader = (DataHeader*)recvBuf;
 	if (nlen <= 0)
 	{
@@ -130,7 +132,7 @@ void cmdThread(SOCKET sock)
 {
 	char cmdBuf[128] = {};
 
-	while (true)
+	while (thRun)
 	{
 		scanf("%s", cmdBuf);
 		if (0 == strcmp(cmdBuf, "exit"))
@@ -181,9 +183,9 @@ int main()
 	_sin.sin_family = AF_INET;
 	_sin.sin_port = htons(8888);
 #ifdef _WIN32
-	_sin.sin_addr.S_un.S_addr = inet_addr("192.168.56.1");
+	_sin.sin_addr.S_un.S_addr = inet_addr("192.168.112.129");
 #else
-	_sin.sin_addr.s_addr = inet_addr("192.168.56.1");
+	_sin.sin_addr.s_addr = inet_addr("192.168.211.1");
 #endif
 	if (SOCKET_ERROR == connect(_sock, (struct sockaddr*)&_sin, sizeof(struct sockaddr_in)))
 	{
@@ -191,8 +193,8 @@ int main()
 	}
 	else {
 		printf("成功连接到服务端...\n");
-	}
-
+	
+}
 	std::thread th(cmdThread, _sock);
 
 	while (thRun)
@@ -205,6 +207,7 @@ int main()
 		if (ret < 0)
 		{
 			printf("服务端已断开连接...\n");
+			thRun = false;
 			break;
 		}
 		if (FD_ISSET(_sock, &fdRead))
@@ -212,6 +215,7 @@ int main()
 			FD_CLR(_sock, &fdRead);
 			if (-1 == headleClient(_sock))
 			{
+				thRun = false;
 				break;
 			}
 		}
