@@ -1,5 +1,5 @@
-#ifndef _ClientSocket_hpp_
-#define _ClientSocket_hpp_
+#ifndef _client_hpp_
+#define _client_hpp_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -199,4 +199,4 @@ private:
 
 };
 
-#endif // !_ClientSocket_hpp_
+#endif // !_client_hpp_
