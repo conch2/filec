@@ -1,5 +1,5 @@
 #include <thread>
-#include "ClientSocket.hpp"
+#include "client.hpp"
 
 void cmdThread(ClientSocket* sock)
 {
