@@ -26,7 +26,6 @@
 
 class ClientSocket
 {
-	SOCKET _sock;
 public:
 	ClientSocket()
 	{
@@ -54,7 +53,7 @@ public:
 #endif
 		if (INVALID_SOCKET != _sock)
 		{
-			printf("关闭旧链接<SOCKET=%d>...", _sock);
+			printf("关闭旧链接<SOCKET=%d>...\n", _sock);
 			Close();
 		}
 		_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -63,12 +62,12 @@ public:
 			printf("错误，创建socket失败...\n");
 		}
 		else {
-			printf("创建socket成功...\n");
+			printf("创建<SOCKET=%d>成功...\n", _sock);
 		}
 	}
 
 	//连接服务器
-	int Connect(const char *ip, unsigned short port)
+	int Connect(const char* ip, unsigned short port)
 	{
 		if (INVALID_SOCKET == _sock)
 		{
@@ -85,10 +84,10 @@ public:
 		int ret = connect(_sock, (struct sockaddr*)&_sin, sizeof(struct sockaddr_in));
 		if (SOCKET_ERROR == ret)
 		{
-			printf("连接服务端失败...\n");
+			printf("<SOCKET=%d>连接服务端<%s:%u>失败...\n", _sock, ip, port);
 		}
 		else {
-			printf("成功连接到服务端...\n");
+			printf("<SOCKET=%d>成功连接到服务端<%s:%u>...\n", _sock, ip, port);
 		}
 		return ret;
 	}
@@ -118,11 +117,12 @@ public:
 		fd_set fdRead;
 		FD_ZERO(&fdRead);
 		FD_SET(_sock, &fdRead);
-		timeval t = { 1, 0 };
+		timeval t = { 0, 0 };
 		int ret = select(_sock + 1, &fdRead, NULL, NULL, &t);
 		if (ret < 0)
 		{
 			printf("<SOCKET=%d>select任务结束...\n", _sock);
+			Close();
 			return false;
 		}
 		if (FD_ISSET(_sock, &fdRead))
@@ -130,7 +130,7 @@ public:
 			FD_CLR(_sock, &fdRead);
 			if (-1 == RecvData())
 			{
-				printf("<SOCKET=%d>select任务结束...\n", _sock);
+				Close();
 				return false;
 			}
 		}
@@ -151,34 +151,37 @@ public:
 		DataHeader* header = (DataHeader*)recvBuf;
 		if (nlen <= 0)
 		{
-			printf("与服务端断开连接...\n");
+			printf("<SOCKET=%d>与服务端断开连接...\n", _sock);
 			return -1;
 		}
 		recv(_sock, recvBuf + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
 		onNetMsg(header);
-	
+
 		return 0;
 	}
 
 	//响应网络消息
-	void onNetMsg(DataHeader* header)
+	virtual void onNetMsg(DataHeader* header)
 	{
 		switch (header->cmd)
 		{
 		case CMD_LOGIN_RESULT:
 		{
 			LoginResult* login = (LoginResult*)header;
-			printf("收到服务端：CMD_LOGIN_RESULT, 数据长度：%d ，result = %d \n", login->dataLength, login->result);
+			printf("<SOCKET=%d>收到服务端：CMD_LOGIN_RESULT, 数据长度：%d ，result = %d \n",
+				_sock, login->dataLength, login->result);
 		} break;
 		case CMD_LOGOUT_RESULT:
 		{
 			LogoutResult* logout = (LogoutResult*)header;
-			printf("收到服务端：CMD_LOGOUT_RESULT, 数据长度：%d ，result = %d \n", logout->dataLength, logout->result);
+			printf("<SOCKET=%d>收到服务端：CMD_LOGOUT_RESULT, 数据长度：%d ，result = %d \n",
+				_sock, logout->dataLength, logout->result);
 		} break;
 		case CMD_NEW_USER_JOIN:
 		{
 			NewUserJoin* user = (NewUserJoin*)header;
-			printf("收到服务端：CMD_NEW_USER_JOIN, 数据长度：%d ，sock = %d \n", user->dataLength, user->sock);
+			printf("<SOCKET=%d>收到服务端：CMD_NEW_USER_JOIN, 数据长度：%d ，sock = %d \n",
+				_sock, user->dataLength, user->sock);
 		} break;
 		}
 	}
@@ -196,6 +199,7 @@ public:
 protected:
 
 private:
+	SOCKET _sock;
 
 };
 
