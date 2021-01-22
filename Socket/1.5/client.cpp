@@ -37,7 +37,13 @@ int main()
 {
 	ClientSocket client;
 	//client.InitSocket();
-	client.Connect("127.0.0.1", 8888);
+	if (SOCKET_ERROR == client.Connect("192.168.112.129", 8888))
+	{
+#ifdef _WIN32
+		system("pause");
+#endif
+		return 0;
+	}
 
 	std::thread th(cmdThread, &client);
 	th.detach();
@@ -48,5 +54,7 @@ int main()
 	}
 
 	client.Close();
-	return 0;
+#ifdef _WIN32
+	system("pause");
+#endif
 }
